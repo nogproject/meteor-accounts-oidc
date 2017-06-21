@@ -11,6 +11,8 @@ Package.onUse(function(api) {
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server']);
   api.use('accounts-oauth@1.1.0', ['client', 'server']);
+  // Export `Oidc` to packages that use this one.
+  api.imply('oidc@1.0.0', ['client', 'server']);
   api.use('oidc@1.0.0', ['client', 'server']);
 
   api.addFiles('oidc_login_button.css', 'client');
