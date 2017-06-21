@@ -20,8 +20,8 @@ var createServiceRegistration = function(service) {
     serviceData.expiresAt = expiresAt;
     serviceData.email = userinfo.email;
 
-    if(accessToken) {
-      var tokenContent = getTokenContent(accessToken);
+    var tokenContent = getTokenContent(token.id_token);
+    if(tokenContent) {
       var fields = _.pick(tokenContent, getConfiguration(service).idTokenWhitelistFields);
       _.extend(serviceData, fields);
     }
