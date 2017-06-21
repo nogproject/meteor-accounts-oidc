@@ -2,6 +2,8 @@
 
 [OpenID Connect](https://openid.net/connect/) login handler for [Meteor](https://www.meteor.com/)
 
+This is a fork from <https://github.com/switch-ch/meteor-accounts-oidc>.
+
 
 ## API
 
@@ -9,7 +11,7 @@ On the server side, configure an OIDC service as follows:
 
 ```
 ServiceConfiguration.configurations.upsert {
-  service: 'my-OIDC'
+  service: 'myoidc'
 }, {
   $set: {
     clientId: 'CLIENT_ID',
@@ -24,13 +26,15 @@ ServiceConfiguration.configurations.upsert {
   }
 }  
 
-Oidc.registerServer('my-OIDC')
-Oidc.registerOidcService('my-OIDC')
+Oidc.registerServer('myoidc')
+Oidc.registerOidcService('myoidc')
 ```
 
 On the client side, configure an OIDC service as follows:
 
 ```
-Oidc.registerClient('my-OIDC')
-Oidc.registerOidcService('my-OIDC')
+Oidc.registerClient('myoidc')
+Oidc.registerOidcService('myoidc')
 ```
+
+Keep in mind to use a service name, that capitalizes well.
