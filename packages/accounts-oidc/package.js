@@ -13,6 +13,8 @@ Package.onUse(function(api) {
   api.use('accounts-oauth@1.1.0', ['client', 'server']);
   api.use('oidc@1.0.0', ['client', 'server']);
 
+  api.export('Oidc');
+
   api.addFiles('oidc_login_button.css', 'client');
 
   api.addFiles('oidc.js');

@@ -1,75 +1,36 @@
-# switch:accounts-oidc package
+# accounts-oidc
 
-A Meteor login service for OpenID Connect (OIDC).
+[OpenID Connect](https://openid.net/connect/) login handler for [Meteor](https://www.meteor.com/)
 
-## Installation
 
-    meteor add switch:accounts-oidc
+## API
 
-## Usage
+On the server side, configure an OIDC service as follows:
 
-`Meteor.loginWithOidc(options, callback)`
-* `options` - object containing options, see below (optional)
-* `callback` - callback function (optional)
-
-#### Example
-
-```js
-Template.myTemplateName.events({
-  'click #login-button': function() {
-    Meteor.loginWithOidc();
+```
+ServiceConfiguration.configurations.upsert {
+  service: 'my-OIDC'
+}, {
+  $set: {
+    clientId: 'CLIENT_ID',
+    secret: 'SUPERSECURESECRET',
+    serverUrl: 'http://localhost:5000',
+    authorizationEndpoint: '/oidc/auth',
+    loginStyle: 'redirect',
+    tokenEndpoint: '/oidc/token',
+    userinfoEndpoint: '/oidc/userinfo',
+    requestPermissions: ['openid', 'profile', 'email', 'groups', 'offline_access'],
+    idTokenWhitelistFields: ['name', 'groups', 'email']
   }
-);
+}  
+
+Oidc.registerServer('my-OIDC')
+Oidc.registerOidcService('my-OIDC')
 ```
 
+On the client side, configure an OIDC service as follows:
 
-## Options
-
-These options override service configuration stored in the database.
-
-* `loginStyle`: `redirect` or `popup`
-* `redirectUrl`: Where to redirect after successful login. Only used if `loginStyle` is set to `redirect`
-
-## Manual Configuration Setup
-
-You can manually configure this package by upserting the service configuration on startup. First, add the `service-configuration` package:
-
-    meteor add service-configuration
-
-### Service Configuration
-
-The following service configuration are available:
-
-* `clientId`: OIDC client identifier
-* `secret`: OIDC client shared secret
-* `serverUrl`: URL of the OIDC server. e.g. `https://openid.example.org:8443`
-* `authorizationEndpoint`: Endpoint of the OIDC authorization service, e.g. `/oidc/authorize`
-* `tokenEndpoint`: Endpoint of the OIDC token service, e.g. `/oidc/token`
-* `userinfoEndpoint`: Endpoint of the OIDC userinfo service, e.g. `/oidc/userinfo`
-* `idTokenWhitelistFields`: A list of fields from IDToken to be added to Meteor.user().services.oidc object
-
-### Project Configuration
-
-Then in your project:
-
-```js
-if (Meteor.isServer) {
-  Meteor.startup(function () {
-    ServiceConfiguration.configurations.upsert(
-      { service: 'oidc' },
-      {
-        $set: {
-          loginStyle: 'redirect',
-          clientId: 'my-client-id-registered-with-the-oidc-server',
-          secret: 'my-client-shared-secret',
-          serverUrl: 'https://openid.example.org',
-          authorizationEndpoint: '/oidc/authorize',
-          tokenEndpoint: '/oidc/token',
-          userinfoEndpoint: '/oidc/userinfo',
-          idTokenWhitelistFields: []
-        }
-      }
-    );
-  });
-}
+```
+Oidc.registerClient('my-OIDC')
+Oidc.registerOidcService('my-OIDC')
 ```

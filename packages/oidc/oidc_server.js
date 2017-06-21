@@ -1,53 +1,55 @@
 Oidc = {};
 
-OAuth.registerService('oidc', 2, null, function(query) {
+var createServiceRegistration = function(service) {
+  return function(query) {
 
-  var debug = false;
-  var token = getToken(query);
-  //console.log('XXX: register token:', token);
+    var debug = false;
+    var token = getToken(service, query);
+    //console.log('XXX: register token:', token);
 
-  var accessToken = token.access_token;
-  var expiresAt = (+new Date) + (1000 * parseInt(token.expires_in, 10));
+    var accessToken = token.access_token;
+    var expiresAt = (+new Date) + (1000 * parseInt(token.expires_in, 10));
 
-  var userinfo = getUserInfo(accessToken);
-  if (debug) console.log('XXX: userinfo:', userinfo);
+    var userinfo = getUserInfo(service, accessToken);
+    if (debug) console.log('XXX: userinfo:', userinfo);
 
-  var serviceData = {};
-  serviceData.id = userinfo.id || userinfo.sub;
-  serviceData.username = userinfo.username || userinfo.preferred_username;
-  serviceData.accessToken = OAuth.sealSecret(accessToken);
-  serviceData.expiresAt = expiresAt;
-  serviceData.email = userinfo.email;
+    var serviceData = {};
+    serviceData.id = userinfo.id || userinfo.sub;
+    serviceData.username = userinfo.username || userinfo.preferred_username;
+    serviceData.accessToken = OAuth.sealSecret(accessToken);
+    serviceData.expiresAt = expiresAt;
+    serviceData.email = userinfo.email;
 
-  if(accessToken) {
-    var tokenContent = getTokenContent(accessToken);
-    var fields = _.pick(tokenContent, getConfiguration().idTokenWhitelistFields);
-    _.extend(serviceData, fields);
-  }
+    if(accessToken) {
+      var tokenContent = getTokenContent(accessToken);
+      var fields = _.pick(tokenContent, getConfiguration(service).idTokenWhitelistFields);
+      _.extend(serviceData, fields);
+    }
 
-  if (token.refresh_token)
-    serviceData.refreshToken = token.refresh_token;
-  if (debug) console.log('XXX: serviceData:', serviceData);
+    if (token.refresh_token)
+      serviceData.refreshToken = token.refresh_token;
+    if (debug) console.log('XXX: serviceData:', serviceData);
 
-  var profile = {};
-  profile.name = userinfo.name;
-  profile.email = userinfo.email;
-  if (debug) console.log('XXX: profile:', profile);
+    var profile = {};
+    profile.name = userinfo.name;
+    profile.email = userinfo.email;
+    if (debug) console.log('XXX: profile:', profile);
 
-  return {
-    serviceData: serviceData,
-    options: { profile: profile }
+    return {
+      serviceData: serviceData,
+      options: { profile: profile }
+    };
   };
-});
+};
 
 var userAgent = "Meteor";
 if (Meteor.release) {
   userAgent += "/" + Meteor.release;
 }
 
-var getToken = function (query) {
+var getToken = function (service, query) {
   var debug = false;
-  var config = getConfiguration();
+  var config = getConfiguration(service);
   var serverTokenEndpoint = config.serverUrl + config.tokenEndpoint;
   var response;
 
@@ -63,28 +65,28 @@ var getToken = function (query) {
           code:           query.code,
           client_id:      config.clientId,
           client_secret:  OAuth.openSecret(config.secret),
-          redirect_uri:   OAuth._redirectUri('oidc', config),
+          redirect_uri:   OAuth._redirectUri(service, config),
           grant_type:     'authorization_code',
           state:          query.state
         }
       }
     );
   } catch (err) {
-    throw _.extend(new Error("Failed to get token from OIDC " + serverTokenEndpoint + ": " + err.message),
+    throw _.extend(new Error("Failed to get token from " + service + " " + serverTokenEndpoint + ": " + err.message),
                    {response: err.response});
   }
   if (response.data.error) {
     // if the http response was a json object with an error attribute
-    throw new Error("Failed to complete handshake with OIDC " + serverTokenEndpoint + ": " + response.data.error);
+    throw new Error("Failed to complete handshake with " + service + " " + serverTokenEndpoint + ": " + response.data.error);
   } else {
     if (debug) console.log('XXX: getToken response: ', response.data);
     return response.data;
   }
 };
 
-var getUserInfo = function (accessToken) {
+var getUserInfo = function (service, accessToken) {
   var debug = false;
-  var config = getConfiguration();
+  var config = getConfiguration(service);
   var serverUserinfoEndpoint = config.serverUrl + config.userinfoEndpoint;
   var response;
   try {
@@ -98,17 +100,17 @@ var getUserInfo = function (accessToken) {
       }
     );
   } catch (err) {
-    throw _.extend(new Error("Failed to fetch userinfo from OIDC " + serverUserinfoEndpoint + ": " + err.message),
+    throw _.extend(new Error("Failed to fetch userinfo from " + service + " " + serverUserinfoEndpoint + ": " + err.message),
                    {response: err.response});
   }
   if (debug) console.log('XXX: getUserInfo response: ', response.data);
   return response.data;
 };
 
-var getConfiguration = function () {
-  var config = ServiceConfiguration.configurations.findOne({ service: 'oidc' });
+var getConfiguration = function (service) {
+  var config = ServiceConfiguration.configurations.findOne({ service: service });
   if (!config) {
-    throw new ServiceConfiguration.ConfigError('Service oidc not configured.');
+    throw new ServiceConfiguration.ConfigError('Service ' + service + ' not configured.');
   }
   return config;
 };
@@ -129,8 +131,13 @@ var getTokenContent=function (token) {
     }
   }
   return content;
-}
+};
 
-Oidc.retrieveCredential = function(credentialToken, credentialSecret) {
-  return OAuth.retrieveCredential(credentialToken, credentialSecret);
+Oidc.registerServer = function (idp) {
+  Oidc[idp] = {};
+  OAuth.registerService(idp, 2, null, createServiceRegistration(idp));
+
+  Oidc[idp].retrieveCredential = function(credentialToken, credentialSecret) {
+    return OAuth.retrieveCredential(credentialToken, credentialSecret);
+  };
 };
