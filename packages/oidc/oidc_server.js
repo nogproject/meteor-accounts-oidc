@@ -30,8 +30,9 @@ function createServiceRegistrationFunction(service, serviceOpts) {
       _.extend(serviceData, fields);
     }
 
-    if (token.refresh_token)
-      serviceData.refreshToken = token.refresh_token;
+    if (token.refresh_token) {
+      serviceData.refreshToken = OAuth.sealSecret(token.refresh_token);
+    }
     if (debug) console.log('XXX: serviceData:', serviceData);
 
     var profile = userinfo;
