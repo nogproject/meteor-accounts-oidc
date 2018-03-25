@@ -1,6 +1,8 @@
 Oidc = {};
 
-function createServiceRegistrationFunction(service) {
+function createServiceRegistrationFunction(service, serviceOpts) {
+  const { usernameFromUserinfo } = serviceOpts || {};
+
   return function(query) {
     var debug = false;
     var token = getToken(service, query);
@@ -13,7 +15,11 @@ function createServiceRegistrationFunction(service) {
 
     var serviceData = {};
     serviceData.id = userinfo.id || userinfo.sub;
-    serviceData.username = userinfo.username || userinfo.preferred_username;
+    if (usernameFromUserinfo) {
+      serviceData.username = usernameFromUserinfo(userinfo);
+    } else {
+      serviceData.username = userinfo.username || userinfo.preferred_username;
+    }
     serviceData.accessToken = OAuth.sealSecret(accessToken);
     serviceData.expiresAt = expiresAt;
     serviceData.email = userinfo.email;
@@ -129,9 +135,11 @@ function getTokenContent(token) {
   return content;
 };
 
-Oidc.registerServer = function registerServer(idp) {
+Oidc.registerServer = function registerServer(idp, opts) {
   Oidc[idp] = {};
-  OAuth.registerService(idp, 2, null, createServiceRegistrationFunction(idp));
+  OAuth.registerService(
+    idp, 2, null, createServiceRegistrationFunction(idp, opts),
+  );
 
   Oidc[idp].retrieveCredential = function retrieveCredential(credentialToken, credentialSecret) {
     return OAuth.retrieveCredential(credentialToken, credentialSecret);
