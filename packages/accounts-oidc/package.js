@@ -15,7 +15,5 @@ Package.onUse(function(api) {
   api.imply('oidc@1.0.0', ['client', 'server']);
   api.use('oidc@1.0.0', ['client', 'server']);
 
-  api.addFiles('oidc_login_button.css', 'client');
-
   api.addFiles('oidc.js');
 });
